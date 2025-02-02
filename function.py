@@ -69,3 +69,71 @@ def OpenPrice(Stock_list, Open_price, Target_buy_price):
         time.sleep(0.5)
         
     return Open_price, Target_buy_price
+
+# 매수
+def BuyStock(stock, Target_buy_price, Actual_buy_price):
+    url = "https://openapivts.koreainvestment.com:29443/uapi/domestic-stock/v1/trading/order-cash"
+
+    payload = json.dumps({
+    "CANO": "50124241", # 계좌번호?
+    "ACNT_PRDT_CD": "01", #
+    "PDNO": stock, # 종목 번호
+    "ORD_DVSN": "00", #
+    "ORD_QTY": "1", # 수량
+    "ORD_UNPR": Target_buy_price[stock] # 매수 가격
+    })
+    
+    headers = {
+    'content-type': 'application/json',
+    'authorization': AUTH_TOKEN,
+    'appkey': APP_KEY,
+    'appsecret': APP_SECRET,
+    'tr_id': 'VTTC0802U'
+    }
+    '''
+    
+    [실전투자]
+    TTTC0802U : 주식 현금 매수 주문
+    TTTC0801U : 주식 현금 매도 주문
+
+    [모의투자]
+    VTTC0802U : 주식 현금 매수 주문
+    VTTC0801U : 주식 현금 매도 주문
+    '''
+    response = requests.request("POST", url, headers=headers, data=payload)
+
+    '''
+    print(response.text)
+    {
+    "rt_cd": "1",
+    "msg_cd": "40570000",
+    "msg1": "모의투자 장시작전 입니다."
+    }
+    '''
+
+# 매도
+def SellStock(stock, Target_sell_price, Actual_sell_price):
+    url = "https://openapivts.koreainvestment.com:29443/uapi/domestic-stock/v1/trading/order-cash"
+
+    payload = json.dumps({
+    "CANO": "50124241", # 계좌번호?
+    "ACNT_PRDT_CD": "01", #
+    "PDNO": stock, # 종목 번호
+    "ORD_DVSN": "00", #
+    "ORD_QTY": "1", # 수량
+    "ORD_UNPR": Target_sell_price[stock] # 매수 가격
+    })
+    
+    headers = {
+    'content-type': 'application/json',
+    'authorization': AUTH_TOKEN,
+    'appkey': APP_KEY,
+    'appsecret': APP_SECRET,
+    'tr_id': 'VTTC0801U'
+    }
+
+    response = requests.request("POST", url, headers=headers, data=payload)
+    
+    '''
+    print(response.text)
+    '''

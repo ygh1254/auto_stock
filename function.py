@@ -110,7 +110,7 @@ def LivePrice(Stock_List, Target_buy_price, Actual_buy_price, Target_sell_price,
         # 현재가가 목표 매수 가격 이하인 경우 & 주식 수량이 0인 경우
         # 현재 잔고 확인하는 기능 추가할 것
         if (live_price <= Target_buy_price[stock]) & (Quantity[stock] == 0):
-            BuyStock(stock, Target_buy_price, Actual_buy_price)
+            BuyStock(stock, Target_buy_price, Actual_buy_price, Target_sell_price)
         
         # 현재가가 목표 매도 가격 이상인 경우 & 주식 수량이 0이 아닌 경우
         # 현재 잔고 확인하는 기능 추가할 것
@@ -120,7 +120,7 @@ def LivePrice(Stock_List, Target_buy_price, Actual_buy_price, Target_sell_price,
         time.sleep(0.5)
 
 # 매수
-def BuyStock(stock, Target_buy_price, Actual_buy_price):
+def BuyStock(stock, Target_buy_price, Actual_buy_price, Target_sell_price):
     url = "https://openapivts.koreainvestment.com:29443/uapi/domestic-stock/v1/trading/order-cash"
 
     payload = json.dumps({
@@ -131,6 +131,7 @@ def BuyStock(stock, Target_buy_price, Actual_buy_price):
     "ORD_QTY": "1", # 수량
     "ORD_UNPR": Target_buy_price[stock] # 매수 가격
     })
+    
     headers = Headers('VTTC0802U')
     
     '''
@@ -157,7 +158,9 @@ def BuyStock(stock, Target_buy_price, Actual_buy_price):
         }
     }
     '''
-
+    Actual_buy_price[stock] = Target_buy_price[stock]
+    Target_sell_price[stock] = RoundNumber(Actual_buy_price[stock] * 1.03)
+    
 # 매도
 def SellStock(stock, Target_sell_price, Actual_sell_price):
     url = "https://openapivts.koreainvestment.com:29443/uapi/domestic-stock/v1/trading/order-cash"

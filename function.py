@@ -14,6 +14,17 @@ Actual_sell_price = {stock: 0 for stock in Stock_list}
 Quantity = {stock: 0 for stock in Stock_list}
 Log = []
 
+# Header 양식 출력
+def Headers(tr_id):
+    headers = {
+        'content-type': 'application/json',
+        'authorization': AUTH_TOKEN,
+        'appkey': APP_KEY,
+        'appsecret': APP_SECRET,
+        'tr_id': tr_id
+    }
+    return headers
+
 # 호가 간격에 맞게 반올림
 def RoundNumber(number):
     if number < 2000:
@@ -37,13 +48,7 @@ def OpenPrice(Stock_list, Open_price, Target_buy_price):
         print(f'Now loading stock {stock}')
         url = f"https://openapivts.koreainvestment.com:29443/uapi/domestic-stock/v1/quotations/inquire-price?fid_cond_mrkt_div_code=J&fid_input_iscd={stock}"
         payload = ""
-        headers = {
-        'content-type': 'application/json',
-        'authorization': AUTH_TOKEN,
-        'appkey': APP_KEY,
-        'appsecret': APP_SECRET,
-        'tr_id': 'FHKST01010100'
-        }
+        headers = Headers('FHKST01010100')
 
         response = requests.request("GET", url, headers=headers, data=payload)
         
@@ -96,13 +101,7 @@ def LivePrice(Stock_List, Target_buy_price, Actual_buy_price, Target_sell_price,
     
         payload = ""
         
-        headers = {
-        'content-type': 'application/json',
-        'authorization': AUTH_TOKEN,
-        'appkey': APP_KEY,
-        'appsecret': APP_SECRET,
-        'tr_id': 'FHKST01010100'
-        }
+        headers = Headers('FHKST01010100')
 
         response = requests.request("GET", url, headers=headers, data=payload)
 
@@ -132,14 +131,8 @@ def BuyStock(stock, Target_buy_price, Actual_buy_price):
     "ORD_QTY": "1", # 수량
     "ORD_UNPR": Target_buy_price[stock] # 매수 가격
     })
+    headers = Headers('VTTC0802U')
     
-    headers = {
-    'content-type': 'application/json',
-    'authorization': AUTH_TOKEN,
-    'appkey': APP_KEY,
-    'appsecret': APP_SECRET,
-    'tr_id': 'VTTC0802U'
-    }
     '''
     
     [실전투자]
@@ -178,13 +171,7 @@ def SellStock(stock, Target_sell_price, Actual_sell_price):
     "ORD_UNPR": Target_sell_price[stock] # 매수 가격
     })
     
-    headers = {
-    'content-type': 'application/json',
-    'authorization': AUTH_TOKEN,
-    'appkey': APP_KEY,
-    'appsecret': APP_SECRET,
-    'tr_id': 'VTTC0801U'
-    }
+    headers = Headers('VTTC0801U')
 
     response = requests.request("POST", url, headers=headers, data=payload)
     

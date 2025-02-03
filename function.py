@@ -70,6 +70,37 @@ def OpenPrice(Stock_list, Open_price, Target_buy_price):
         
     return Open_price, Target_buy_price
 
+# 현재가 받아오기
+def LivePrice(Stock_List, Target_buy_price, Actual_buy_price, Target_sell_price, Actual_sell_price):
+    for stock in Stock_List:
+        url = f"https://openapivts.koreainvestment.com:29443/uapi/domestic-stock/v1/quotations/inquire-price?fid_cond_mrkt_div_code=J&fid_input_iscd={stock}"
+    
+        payload = ""
+        
+        headers = {
+        'content-type': 'application/json',
+        'authorization': AUTH_TOKEN,
+        'appkey': APP_KEY,
+        'appsecret': APP_SECRET,
+        'tr_id': 'FHKST01010100'
+        }
+
+        response = requests.request("GET", url, headers=headers, data=payload)
+
+        live_price = int(json.loads(response.text)['output']['stck_prpr'])
+        print(live_price, Target_buy_price[stock])
+        # 현재가가 목표 매수 가격 이하인 경우 & 주식 수량이 0인 경우
+        # 현재 잔고 확인하는 기능 추가할 것
+        if (live_price <= Target_buy_price[stock]) & (Quantity[stock] == 0):
+            BuyStock(stock, Target_buy_price, Actual_buy_price)
+        
+        # 현재가가 목표 매도 가격 이상인 경우 & 주식 수량이 0이 아닌 경우
+        # 현재 잔고 확인하는 기능 추가할 것
+        elif (live_price >= Target_sell_price[stock]) & (Quantity[stock] != 0):
+            SellStock(stock, Target_sell_price, Actual_sell_price)
+        
+        time.sleep(0.5)
+
 # 매수
 def BuyStock(stock, Target_buy_price, Actual_buy_price):
     url = "https://openapivts.koreainvestment.com:29443/uapi/domestic-stock/v1/trading/order-cash"

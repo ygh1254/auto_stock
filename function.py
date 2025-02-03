@@ -181,3 +181,80 @@ def SellStock(stock, Target_sell_price, Actual_sell_price):
     '''
     print(response.text)
     '''
+    
+# 주식 잔고 조회
+def CheckStock():
+    url = "https://openapivts.koreainvestment.com:29443/uapi/domestic-stock/v1/trading/inquire-balance?CANO=50124241&ACNT_PRDT_CD=01&AFHR_FLPR_YN=N&OFL_YN=&INQR_DVSN=01&UNPR_DVSN=01&FUND_STTL_ICLD_YN=N&FNCG_AMT_AUTO_RDPT_YN=N&PRCS_DVSN=00&CTX_AREA_FK100=&CTX_AREA_NK100="
+
+    payload = ""
+    headers = Headers('VTTC8434R')
+
+    response = requests.request("GET", url, headers=headers, data=payload)
+    '''
+    {
+    "ctx_area_fk100": "                                                                                                    ",
+    "ctx_area_nk100": "                                                                                                    ",
+    "output1": [
+        {
+            "pdno": "005930",
+            "prdt_name": "삼성전자",
+            "trad_dvsn_name": "현금",
+            "bfdy_buy_qty": "0",
+            "bfdy_sll_qty": "0",
+            "thdt_buyqty": "1",
+            "thdt_sll_qty": "0",
+            "hldg_qty": "1",
+            "ord_psbl_qty": "1",
+            "pchs_avg_pric": "51000.0000",
+            "pchs_amt": "51000",
+            "prpr": "51000",
+            "evlu_amt": "51000",
+            "evlu_pfls_amt": "0",
+            "evlu_pfls_rt": "0.00",
+            "evlu_erng_rt": "0.00000000",
+            "loan_dt": "",
+            "loan_amt": "0",
+            "stln_slng_chgs": "0",
+            "expd_dt": "",
+            "fltt_rt": "-2.67000000",
+            "bfdy_cprs_icdc": "1400",
+            "item_mgna_rt_name": "20%",
+            "grta_rt_name": "",
+            "sbst_pric": "0",
+            "stck_loan_unpr": "0.0000"
+        }
+    ],
+    "output2": [
+        {
+            "dnca_tot_amt": "10000000",
+            "nxdy_excc_amt": "10000000",
+            "prvs_rcdl_excc_amt": "9949000",
+            "cma_evlu_amt": "0",
+            "bfdy_buy_amt": "0",
+            "thdt_buy_amt": "51000",
+            "nxdy_auto_rdpt_amt": "0",
+            "bfdy_sll_amt": "0",
+            "thdt_sll_amt": "0",
+            "d2_auto_rdpt_amt": "0",
+            "bfdy_tlex_amt": "0",
+            "thdt_tlex_amt": "0",
+            "tot_loan_amt": "0",
+            "scts_evlu_amt": "51000",
+            "tot_evlu_amt": "10000000",
+            "nass_amt": "10000000",
+            "fncg_gld_auto_rdpt_yn": "",
+            "pchs_amt_smtl_amt": "51000",
+            "evlu_amt_smtl_amt": "51000",
+            "evlu_pfls_smtl_amt": "0",
+            "tot_stln_slng_chgs": "0",
+            "bfdy_tot_asst_evlu_amt": "10000000",
+            "asst_icdc_amt": "0",
+            "asst_icdc_erng_rt": "0.00000000"
+        }
+    ],
+    "rt_cd": "0",
+    "msg_cd": "20310000",
+    "msg1": "모의투자 조회가 완료되었습니다.                                                 "
+    }
+    '''
+    print(response.text)

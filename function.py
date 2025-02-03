@@ -1,6 +1,7 @@
 import requests
 import json
 import time
+import math
 from config import AUTH_TOKEN, APP_KEY, APP_SECRET, STOCK_LIST
 
 # 리스트 사전 정의
@@ -12,6 +13,23 @@ Target_sell_price = {stock: 0 for stock in Stock_list}
 Actual_sell_price = {stock: 0 for stock in Stock_list}
 Quantity = {stock: 0 for stock in Stock_list}
 Log = []
+
+# 호가 간격에 맞게 반올림
+def RoundNumber(number):
+    if number < 2000:
+        return math.floor(number)
+    elif number < 5000:
+        return 5 * math.floor(number / 5)
+    elif number < 20000:
+        return 10 * math.floor(number / 10)
+    elif number < 50000:
+        return 50 * math.floor(number / 50)
+    elif number < 200000:
+        return 100 * math.floor(number / 100)
+    elif number < 500000:
+       return 500 * math.floor(number / 500)
+    else:
+       return 1000 * math.floor(number / 1000)
 
 # 시가 받아오기 - 09시 1회 실행
 def OpenPrice(Stock_list, Open_price, Target_buy_price):
@@ -62,8 +80,9 @@ def OpenPrice(Stock_list, Open_price, Target_buy_price):
         '''
         
         open_price = int(json.loads(response.text)['output']['stck_oprc'])
+        target_buy_price = RoundNumber(open_price * 0.95)
         Open_price[stock] = open_price
-        Target_buy_price[stock] = open_price * 0.95
+        Target_buy_price[stock] = target_buy_price
 
         #초당 거래 횟수 제한 (2/sec?)
         time.sleep(0.5)
@@ -134,11 +153,15 @@ def BuyStock(stock, Target_buy_price, Actual_buy_price):
     response = requests.request("POST", url, headers=headers, data=payload)
 
     '''
-    print(response.text)
     {
-    "rt_cd": "1",
-    "msg_cd": "40570000",
-    "msg1": "모의투자 장시작전 입니다."
+    "rt_cd": "0",
+    "msg_cd": "40600000",
+    "msg1": "모의투자 매수주문이 완료 되었습니다.",
+    "output": {
+        "KRX_FWDG_ORD_ORGNO": "00950",
+        "ODNO": "51378",
+        "ORD_TMD": "110840"
+        }
     }
     '''
 

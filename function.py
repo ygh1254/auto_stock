@@ -126,8 +126,8 @@ def OpenPrice(Stock_list, Open_price, Target_buy_price):
     return Open_price, Target_buy_price
 
 # 현재가 받아오기
-def LivePrice(Stock_List, Target_buy_price, Actual_buy_price, Target_sell_price, Actual_sell_price):
-    for stock in Stock_List:
+def LivePrice(Stock_list, Target_buy_price, Actual_buy_price, Target_sell_price, Actual_sell_price):
+    for stock in Stock_list:
         url = f"https://openapivts.koreainvestment.com:29443/uapi/domestic-stock/v1/quotations/inquire-price?fid_cond_mrkt_div_code=J&fid_input_iscd={stock}"
     
         payload = ""
@@ -137,62 +137,78 @@ def LivePrice(Stock_List, Target_buy_price, Actual_buy_price, Target_sell_price,
         response = requests.request("GET", url, headers=headers, data=payload)
 
         live_price = int(json.loads(response.text)['output']['stck_prpr'])
-        print(live_price, Target_buy_price[stock])
+        target_buy_price = Target_buy_price[stock]
+        target_sell_price = Target_sell_price[stock]
+        
+        print(live_price, target_buy_price)
+        
         # 현재가가 목표 매수 가격 이하인 경우 & 주식 수량이 0인 경우
-        # 현재 잔고 확인하는 기능 추가할 것
-        if (live_price <= Target_buy_price[stock]) & (Quantity[stock] == 0):
-            BuyStock(stock, Target_buy_price, Actual_buy_price, Target_sell_price)
+        # 현재 계좌 잔고 확인하는 기능 추가할 것
+        if (live_price <= target_buy_price) & (Quantity[stock] == 0):
+            actual_buy_price = BuyStock(stock, target_buy_price)
+            
+            Actual_buy_price[stock] = actual_buy_price
+            Target_sell_price[stock] = RoundNumber(actual_buy_price * 1.03)
         
         # 현재가가 목표 매도 가격 이상인 경우 & 주식 수량이 0이 아닌 경우
-        # 현재 잔고 확인하는 기능 추가할 것
-        elif (live_price >= Target_sell_price[stock]) & (Quantity[stock] != 0):
-            SellStock(stock, Target_sell_price, Actual_sell_price)
+        # 현재 주식 잔고 확인하는 기능 추가할 것 -> 추가 시 Quantity 없어도 될 것 같음
+        elif (live_price >= target_sell_price) & (Quantity[stock] != 0):
+            actual_sell_price = SellStock(stock, target_sell_price)
+            
+            Actual_sell_price[stock] = actual_sell_price
         
         time.sleep(0.5)
 
 # 매수
-def BuyStock(stock, Target_buy_price, Actual_buy_price, Target_sell_price):
-    url = "https://openapivts.koreainvestment.com:29443/uapi/domestic-stock/v1/trading/order-cash"
-
-    payload = json.dumps({
-    "CANO": "50124241", # 계좌번호?
-    "ACNT_PRDT_CD": "01", #
-    "PDNO": stock, # 종목 번호
-    "ORD_DVSN": "00", #
-    "ORD_QTY": "1", # 수량
-    "ORD_UNPR": Target_buy_price[stock] # 매수 가격
-    })
+def BuyStock(stock, target_buy_price):
     
-    headers = Headers('VTTC0802U')
-    
-    '''
-    [실전투자]
-    TTTC0802U : 주식 현금 매수 주문
-    TTTC0801U : 주식 현금 매도 주문
+    if CheckBuyStock(stock, target_buy_price):
+        
+        url = "https://openapivts.koreainvestment.com:29443/uapi/domestic-stock/v1/trading/order-cash"
 
-    [모의투자]
-    VTTC0802U : 주식 현금 매수 주문
-    VTTC0801U : 주식 현금 매도 주문
-    '''
-    response = requests.request("POST", url, headers=headers, data=payload)
+        payload = json.dumps({
+        "CANO": "50124241", # 계좌번호?
+        "ACNT_PRDT_CD": "01", #
+        "PDNO": stock, # 종목 번호
+        "ORD_DVSN": "00", #
+        "ORD_QTY": "1", # 수량
+        "ORD_UNPR": target_buy_price # 매수 가격
+        })
+        
+        headers = Headers('VTTC0802U')
+        
+        '''
+        [실전투자]
+        TTTC0802U : 주식 현금 매수 주문
+        TTTC0801U : 주식 현금 매도 주문
 
-    '''
-    {
-    "rt_cd": "0",
-    "msg_cd": "40600000",
-    "msg1": "모의투자 매수주문이 완료 되었습니다.",
-    "output": {
-        "KRX_FWDG_ORD_ORGNO": "00950",
-        "ODNO": "51378",
-        "ORD_TMD": "110840"
+        [모의투자]
+        VTTC0802U : 주식 현금 매수 주문
+        VTTC0801U : 주식 현금 매도 주문
+        '''
+        response = requests.request("POST", url, headers=headers, data=payload)
+
+        '''
+        {
+        "rt_cd": "0",
+        "msg_cd": "40600000",
+        "msg1": "모의투자 매수주문이 완료 되었습니다.",
+        "output": {
+            "KRX_FWDG_ORD_ORGNO": "00950",
+            "ODNO": "51378",
+            "ORD_TMD": "110840"
+            }
         }
-    }
-    '''
-    Actual_buy_price[stock] = Target_buy_price[stock]
-    Target_sell_price[stock] = RoundNumber(Actual_buy_price[stock] * 1.03)
+        '''
+        
+        #실제 매수가
+        actual_buy_price = target_buy_price
+        
+        return actual_buy_price
     
 # 매도
-def SellStock(stock, Target_sell_price, Actual_sell_price):
+def SellStock(stock, target_sell_price):
+        
     url = "https://openapivts.koreainvestment.com:29443/uapi/domestic-stock/v1/trading/order-cash"
 
     payload = json.dumps({
@@ -201,19 +217,24 @@ def SellStock(stock, Target_sell_price, Actual_sell_price):
     "PDNO": stock, # 종목 번호
     "ORD_DVSN": "00", #
     "ORD_QTY": "1", # 수량
-    "ORD_UNPR": Target_sell_price[stock] # 매수 가격
+    "ORD_UNPR": target_sell_price # 매수 가격
     })
     
     headers = Headers('VTTC0801U')
 
     response = requests.request("POST", url, headers=headers, data=payload)
-    
+
     '''
     print(response.text)
     '''
     
+    # 실제 매도가
+    actual_sell_price = target_sell_price
+    
+    return actual_sell_price
+    
 # 주식 잔고 조회
-def CheckStock():
+def CheckStock(stock):
     url = "https://openapivts.koreainvestment.com:29443/uapi/domestic-stock/v1/trading/inquire-balance?CANO=50124241&ACNT_PRDT_CD=01&AFHR_FLPR_YN=N&OFL_YN=&INQR_DVSN=01&UNPR_DVSN=01&FUND_STTL_ICLD_YN=N&FNCG_AMT_AUTO_RDPT_YN=N&PRCS_DVSN=00&CTX_AREA_FK100=&CTX_AREA_NK100="
 
     payload = ""
@@ -289,8 +310,14 @@ def CheckStock():
     '''
     print(response.text)
     
-def CheckBuyStock():
-    url = "https://openapivts.koreainvestment.com:29443/uapi/domestic-stock/v1/trading/inquire-psbl-order?CANO=50124241&ACNT_PRDT_CD=01&PDNO=005930&ORD_UNPR=55000&ORD_DVSN=01&OVRS_ICLD_YN=N&CMA_EVLU_AMT_ICLD_YN=N"
+    # pdno와 stock 비교 후 판매
+    # 테스트 단계에서는 주식 수량이 1로 고정되어 있으나 추후 수량이 늘어나면 수정할 필요 있음.
+    
+    return True
+
+# 주식 매수 가능 여부 조회
+def CheckBuyStock(stock, target_buy_price):
+    url = f"https://openapivts.koreainvestment.com:29443/uapi/domestic-stock/v1/trading/inquire-psbl-order?CANO=50124241&ACNT_PRDT_CD=01&PDNO={stock}&ORD_UNPR={target_buy_price}&ORD_DVSN=01&OVRS_ICLD_YN=N&CMA_EVLU_AMT_ICLD_YN=N"
 
     payload = ""
     headers = {
@@ -326,3 +353,5 @@ def CheckBuyStock():
     "msg1": "모의투자 조회가 완료되었습니다.                                                 "
     }
     '''
+    
+    return True

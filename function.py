@@ -135,7 +135,6 @@ def BuyStock(stock, Target_buy_price, Actual_buy_price, Target_sell_price):
     headers = Headers('VTTC0802U')
     
     '''
-    
     [실전투자]
     TTTC0802U : 주식 현금 매수 주문
     TTTC0801U : 주식 현금 매도 주문
@@ -258,3 +257,41 @@ def CheckStock():
     }
     '''
     print(response.text)
+    
+def CheckBuyStock():
+    url = "https://openapivts.koreainvestment.com:29443/uapi/domestic-stock/v1/trading/inquire-psbl-order?CANO=50124241&ACNT_PRDT_CD=01&PDNO=005930&ORD_UNPR=55000&ORD_DVSN=01&OVRS_ICLD_YN=N&CMA_EVLU_AMT_ICLD_YN=N"
+
+    payload = ""
+    headers = {
+    'content-type': 'application/json',
+    'authorization': AUTH_TOKEN,
+    'appkey': APP_KEY,
+    'appsecret': APP_SECRET,
+    'tr_id': 'VTTC8908R'
+    }
+
+    response = requests.request("GET", url, headers=headers, data=payload)
+
+    print(response.text)
+    
+    '''
+    {
+    "output": {
+        "ord_psbl_cash": "9950000",
+        "ord_psbl_sbst": "0",
+        "ruse_psbl_amt": "0",
+        "fund_rpch_chgs": "0",
+        "psbl_qty_calc_unpr": "68100",
+        "nrcvb_buy_amt": "9998580",
+        "nrcvb_buy_qty": "146",
+        "max_buy_amt": "50000000",
+        "max_buy_qty": "734",
+        "cma_evlu_amt": "0",
+        "ovrs_re_use_amt_wcrc": "0",
+        "ord_psbl_frcr_amt_wcrc": "0"
+    },
+    "rt_cd": "0",
+    "msg_cd": "20310000",
+    "msg1": "모의투자 조회가 완료되었습니다.                                                 "
+    }
+    '''

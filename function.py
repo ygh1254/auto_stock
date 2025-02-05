@@ -100,7 +100,7 @@ def LivePrice(Stock_list, Target_buy_price, Actual_buy_price, Target_sell_price,
         url = f"https://openapivts.koreainvestment.com:29443/uapi/domestic-stock/v1/quotations/inquire-price?fid_cond_mrkt_div_code=J&fid_input_iscd={stock}"
     
         payload = ""
-        
+
         headers = Headers('FHKST01010100')
 
         response = requests.request("GET", url, headers=headers, data=payload)
@@ -114,17 +114,39 @@ def LivePrice(Stock_list, Target_buy_price, Actual_buy_price, Target_sell_price,
         # 현재가가 목표 매수 가격 이하인 경우 & 주식 수량이 0인 경우
         # 현재 계좌 잔고 확인하는 기능 추가할 것
         if (live_price <= target_buy_price) & (Quantity[stock] == 0):
-            actual_buy_price = BuyStock(stock, target_buy_price)
+            try:
+                actual_buy_price = BuyStock(stock, target_buy_price)
+                
+            except requests.exceptions.HTTPError as http_err:
+                print(f"HTTP 오류 발생: {http_err}")
+            except requests.exceptions.ConnectionError as conn_err:
+                print(f"연결 오류 발생: {conn_err}")
+            except requests.exceptions.Timeout as timeout_err:
+                print(f"타임아웃 오류 발생: {timeout_err}")
+            except requests.exceptions.RequestException as req_err:
+                print(f"요청 오류 발생: {req_err}")
             
-            Actual_buy_price[stock] = actual_buy_price
-            Target_sell_price[stock] = RoundNumber(actual_buy_price * 1.03)
+            else:    
+                Actual_buy_price[stock] = actual_buy_price
+                Target_sell_price[stock] = RoundNumber(actual_buy_price * 1.03)
         
         # 현재가가 목표 매도 가격 이상인 경우 & 주식 수량이 0이 아닌 경우
         # 현재 주식 잔고 확인하는 기능 추가할 것 -> 추가 시 Quantity 없어도 될 것 같음
         elif (live_price >= target_sell_price) & (Quantity[stock] != 0):
-            actual_sell_price = SellStock(stock, target_sell_price)
-            
-            Actual_sell_price[stock] = actual_sell_price
+            try:
+                actual_sell_price = SellStock(stock, target_sell_price)
+                
+            except requests.exceptions.HTTPError as http_err:
+                print(f"HTTP 오류 발생: {http_err}")
+            except requests.exceptions.ConnectionError as conn_err:
+                print(f"연결 오류 발생: {conn_err}")
+            except requests.exceptions.Timeout as timeout_err:
+                print(f"타임아웃 오류 발생: {timeout_err}")
+            except requests.exceptions.RequestException as req_err:
+                print(f"요청 오류 발생: {req_err}")
+                
+            else:
+                Actual_sell_price[stock] = actual_sell_price
         
         time.sleep(0.5)
 
@@ -192,10 +214,6 @@ def SellStock(stock, target_sell_price):
     headers = Headers('VTTC0801U')
 
     response = requests.request("POST", url, headers=headers, data=payload)
-
-    '''
-    print(response.text)
-    '''
     
     # 실제 매도가
     actual_sell_price = target_sell_price

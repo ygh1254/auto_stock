@@ -25,6 +25,19 @@ def Headers(tr_id):
     }
     return headers
 
+def CatchError(response):
+    try:
+        response.raise_for_status()
+        
+    except requests.exceptions.HTTPError as http_err:
+        print(f"HTTP 오류 발생: {http_err}")
+    except requests.exceptions.ConnectionError as conn_err:
+        print(f"연결 오류 발생: {conn_err}")
+    except requests.exceptions.Timeout as timeout_err:
+        print(f"타임아웃 오류 발생: {timeout_err}")
+    except requests.exceptions.RequestException as req_err:
+        print(f"요청 오류 발생: {req_err}")
+
 # 호가 간격에 맞게 반올림
 def RoundNumber(number):
     if number < 2000:
@@ -85,7 +98,10 @@ def OpenPrice(Stock_list, Open_price, Target_buy_price):
         '''
         
         open_price = int(json.loads(response.text)['output']['stck_oprc'])
-        target_buy_price = RoundNumber(open_price * 0.95)
+        # target_buy_price = RoundNumber(open_price * 0.95)
+        
+        # Test Code
+        target_buy_price = RoundNumber(open_price * 0.99)
         Open_price[stock] = open_price
         Target_buy_price[stock] = target_buy_price
 
@@ -104,7 +120,10 @@ def LivePrice(Stock_list, Target_buy_price, Actual_buy_price, Target_sell_price,
         headers = Headers('FHKST01010100')
 
         response = requests.request("GET", url, headers=headers, data=payload)
-
+        CatchError(response)
+        
+        print(response.text)
+        
         live_price = int(json.loads(response.text)['output']['stck_prpr'])
         target_buy_price = Target_buy_price[stock]
         target_sell_price = Target_sell_price[stock]
@@ -114,39 +133,20 @@ def LivePrice(Stock_list, Target_buy_price, Actual_buy_price, Target_sell_price,
         # 현재가가 목표 매수 가격 이하인 경우 & 주식 수량이 0인 경우
         # 현재 계좌 잔고 확인하는 기능 추가할 것
         if (live_price <= target_buy_price) & (Quantity[stock] == 0):
-            try:
-                actual_buy_price = BuyStock(stock, target_buy_price)
-                
-            except requests.exceptions.HTTPError as http_err:
-                print(f"HTTP 오류 발생: {http_err}")
-            except requests.exceptions.ConnectionError as conn_err:
-                print(f"연결 오류 발생: {conn_err}")
-            except requests.exceptions.Timeout as timeout_err:
-                print(f"타임아웃 오류 발생: {timeout_err}")
-            except requests.exceptions.RequestException as req_err:
-                print(f"요청 오류 발생: {req_err}")
+        # if (live_price <= target_buy_price):
+            time.sleep(0.5)
+            actual_buy_price = BuyStock(stock, target_buy_price)
             
-            else:    
-                Actual_buy_price[stock] = actual_buy_price
-                Target_sell_price[stock] = RoundNumber(actual_buy_price * 1.03)
+            Actual_buy_price[stock] = actual_buy_price
+            Target_sell_price[stock] = RoundNumber(actual_buy_price * 1.03)
         
         # 현재가가 목표 매도 가격 이상인 경우 & 주식 수량이 0이 아닌 경우
         # 현재 주식 잔고 확인하는 기능 추가할 것 -> 추가 시 Quantity 없어도 될 것 같음
         elif (live_price >= target_sell_price) & (Quantity[stock] != 0):
-            try:
-                actual_sell_price = SellStock(stock, target_sell_price)
-                
-            except requests.exceptions.HTTPError as http_err:
-                print(f"HTTP 오류 발생: {http_err}")
-            except requests.exceptions.ConnectionError as conn_err:
-                print(f"연결 오류 발생: {conn_err}")
-            except requests.exceptions.Timeout as timeout_err:
-                print(f"타임아웃 오류 발생: {timeout_err}")
-            except requests.exceptions.RequestException as req_err:
-                print(f"요청 오류 발생: {req_err}")
-                
-            else:
-                Actual_sell_price[stock] = actual_sell_price
+            time.sleep(0.5)
+            actual_sell_price = SellStock(stock, target_sell_price)
+
+            Actual_sell_price[stock] = actual_sell_price
         
         time.sleep(0.5)
 
@@ -163,7 +163,7 @@ def BuyStock(stock, target_buy_price):
         "PDNO": stock, # 종목 번호
         "ORD_DVSN": "00", #
         "ORD_QTY": "1", # 수량
-        "ORD_UNPR": target_buy_price # 매수 가격
+        "ORD_UNPR": str(target_buy_price) # 매수 가격
         })
         
         headers = Headers('VTTC0802U')
@@ -178,7 +178,8 @@ def BuyStock(stock, target_buy_price):
         VTTC0801U : 주식 현금 매도 주문
         '''
         response = requests.request("POST", url, headers=headers, data=payload)
-
+        CatchError(response)
+        
         '''
         {
         "rt_cd": "0",
@@ -193,7 +194,10 @@ def BuyStock(stock, target_buy_price):
         '''
         
         #실제 매수가
-        actual_buy_price = target_buy_price
+        actual_buy_price = int(target_buy_price)
+        
+        print(f"Bought {stock}")
+        Quantity[stock] += 1
         
         return actual_buy_price
     
@@ -208,15 +212,16 @@ def SellStock(stock, target_sell_price):
     "PDNO": stock, # 종목 번호
     "ORD_DVSN": "00", #
     "ORD_QTY": "1", # 수량
-    "ORD_UNPR": target_sell_price # 매수 가격
+    "ORD_UNPR": str(target_sell_price) # 매수 가격
     })
     
     headers = Headers('VTTC0801U')
 
     response = requests.request("POST", url, headers=headers, data=payload)
+    CatchError(response)
     
     # 실제 매도가
-    actual_sell_price = target_sell_price
+    actual_sell_price = int(target_sell_price)
     
     return actual_sell_price
     
@@ -228,6 +233,7 @@ def CheckStock(stock):
     headers = Headers('VTTC8434R')
 
     response = requests.request("GET", url, headers=headers, data=payload)
+    CatchError(response)
     '''
     {
     "ctx_area_fk100": "                                                                                                    ",
@@ -295,8 +301,6 @@ def CheckStock(stock):
     "msg1": "모의투자 조회가 완료되었습니다.                                                 "
     }
     '''
-    print(response.text)
-    
     # pdno와 stock 비교 후 판매
     # 테스트 단계에서는 주식 수량이 1로 고정되어 있으나 추후 수량이 늘어나면 수정할 필요 있음.
     
@@ -316,8 +320,7 @@ def CheckBuyStock(stock, target_buy_price):
     }
 
     response = requests.request("GET", url, headers=headers, data=payload)
-
-    print(response.text)
+    CatchError(response)
     
     '''
     {

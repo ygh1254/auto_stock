@@ -6,7 +6,7 @@ import logging
 from slack import *
 from config import AUTH_TOKEN, APP_KEY, APP_SECRET, STOCK_LIST
 
-logging.basicConfig(filename='app.log', level=logging.INFO, 
+logging.basicConfig(filename='app.log', level=logging.DEBUG, 
                     format='%(asctime)s - %(levelname)s - %(message)s',
                     datefmt='%m/%d/%Y %p %I:%M:%S')
 logger = logging.getLogger('function')
@@ -14,12 +14,6 @@ console_handler = logging.StreamHandler()
 file_handler = logging.FileHandler('app.log')
 logger.addHandler(console_handler)
 logger.addHandler(file_handler)
-
-logger.debug('DEBUG')
-logger.info('INFO')
-logger.warning('WARNING')
-logger.error('ERROR')
-logger.critical('CRITICAL')
 
 # 리스트 사전 정의
 Stock_list = STOCK_LIST
@@ -63,13 +57,13 @@ def CatchError(response):
         response.raise_for_status()
         
     except requests.exceptions.HTTPError as http_err:
-        print(f"HTTP 오류 발생: {http_err}")
+        logging.ERROR(f"HTTP 오류 발생: {http_err}")
     except requests.exceptions.ConnectionError as conn_err:
-        print(f"연결 오류 발생: {conn_err}")
+        logging.ERROR(f"연결 오류 발생: {conn_err}")
     except requests.exceptions.Timeout as timeout_err:
-        print(f"타임아웃 오류 발생: {timeout_err}")
+        logging.ERROR(f"타임아웃 오류 발생: {timeout_err}")
     except requests.exceptions.RequestException as req_err:
-        print(f"요청 오류 발생: {req_err}")
+        logging.ERROR(f"요청 오류 발생: {req_err}")
 
 # 호가 간격에 맞게 반올림
 def RoundNumber(number):
@@ -92,9 +86,10 @@ def RoundNumber(number):
 def OpenPrice(Stock_list, Open_price, Target_buy_price, Current_stock):
     
     SendMessage("프로그램을 시작합니다.")
+    logging.debug("프로그램을 시작합니다")
     
     for stock in Stock_list:
-        print(f'{Current_stock[stock]['prdt_name']}  정보를 가져옵니다')
+        logging.debug(f'{Current_stock[stock]['prdt_name']}  정보를 가져옵니다')
         url = f"https://openapivts.koreainvestment.com:29443/uapi/domestic-stock/v1/quotations/inquire-price?fid_cond_mrkt_div_code=J&fid_input_iscd={stock}"
         payload = ""
         headers = Headers('FHKST01010100')
@@ -160,9 +155,9 @@ def LivePrice(Stock_list, Target_buy_price, Target_sell_price, Current_stock):
         target_buy_price = Target_buy_price[stock]
         target_sell_price = Target_sell_price[stock]
         
-        print(f"{Current_stock[stock]['prdt_name']} 목표구매가격 {target_buy_price}원, 시가 {live_price}원")
-        print(f"{Current_stock[stock]['prdt_name']} 목표판매가격 {target_sell_price}원, 시가 {live_price}원")
-        print("-----------------------------------------------------------")
+        logger.debug(f"{Current_stock[stock]['prdt_name']} 목표구매가격 {target_buy_price}원, 시가 {live_price}원")
+        logger.debug((f"{Current_stock[stock]['prdt_name']} 목표판매가격 {target_sell_price}원, 시가 {live_price}원"))
+        logger.debug("-----------------------------------------------------------")
         
         # Current_stock[stock]['ord_psbl_qty']가 0인 경우 구매 조건식 확인
         if Current_stock[stock]['ord_psbl_qty'] == 0:
@@ -184,8 +179,8 @@ def LivePrice(Stock_list, Target_buy_price, Target_sell_price, Current_stock):
         
         time.sleep(0.5)
 
-    print(Current_account)
-
+    logger.debug(Current_account)
+    
 # 매수
 def BuyStock(stock, target_buy_price):
     
@@ -232,7 +227,7 @@ def BuyStock(stock, target_buy_price):
         text = f"{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime)} | {stock}을 {target_buy_price}원에 구매합니다"
         SendMessage(text)
         
-        return print(f"{stock}을 구매합니다")
+        logger.debug(f"{stock}을 구매합니다")
     
 # 매도
 def SellStock(stock, target_sell_price):
@@ -256,7 +251,7 @@ def SellStock(stock, target_sell_price):
     text = f"{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime)} | {stock}을 {target_sell_price}원에 판매합니다"
     SendMessage(text)
     
-    return print(f"{stock}을 판매합니다")
+    logger.debug(f"{stock}을 판매합니다")
     
 # 주식 잔고 조회
 def CheckStock(Current_stock, Current_account):
@@ -290,6 +285,7 @@ def CheckStock(Current_stock, Current_account):
                                  }
         
         text = (f"------------------------\n종목번호: {item['pdno']},\n 종목이름: {item['prdt_name']},\n 보유수량:{item['hldg_qty']},\n 주문가능수량:{item['ord_psbl_qty']},\n 매입평균가격:{item['pchs_avg_pric']},\n 현재가:{item['prpr']},\n 평가금액:{item['evlu_amt']},\n 수익:{item['evlu_pfls_amt']},\n 수익률:{item['evlu_pfls_rt']}%")
+        logger.debug(text)
         SendMessage(text)
         
     for item in current_account:
@@ -305,6 +301,7 @@ def CheckStock(Current_stock, Current_account):
                         }
         
         text = (f"------------------------\n예수금총금액:{item['dnca_tot_amt']},\n 금일매수금액:{item['thdt_buy_amt']},\n 금일매도금액:{item['thdt_sll_amt']},\n 총평가금액:{item['tot_evlu_amt']},\n 자산증감액:{item['asst_icdc_amt']},\n 자산증감수익률:{item['asst_icdc_erng_rt']}%")
+        logger.debug(text)
         SendMessage(text)
         
     time.sleep(0.5)

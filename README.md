@@ -1,6 +1,6 @@
 # auto_stock
 
-본 프로그램은 한국투자증권 API 기반 주식 자동매매 거래 시스템입니다. 현재 모의계좌 기반 서비스를 제공하고 있습니다.
+본 프로그램은 한국투자증권 API 기반 주식 자동매매 거래 시스템입니다.
 
 config.py  
     
@@ -14,9 +14,13 @@ config.py
     APP_SECRET = 'str'  
     STOCK_LIST = ['str']  
 
+real_function.py
+
+    실계좌를 기반으로 main.py에서 사용할 다양한 함수들을 정의하는 파일입니다.
+
 function.py
 
-    main.py에서 사용할 다양한 함수들을 정의하는 파일입니다.  
+    모의계좌를 기반으로 main.py에서 사용할 다양한 함수들을 정의하는 파일입니다.  
 
     - Headers(str: tr_id):
         return dict: headers

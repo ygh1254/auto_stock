@@ -11,8 +11,9 @@ CheckStock(Current_stock, Current_account)
 while(True):
     current_time = datetime.now().time()
     if start_time <= current_time <= end_time :
-        LivePrice(Stock_list, Target_buy_price, Target_sell_price, Current_stock)
+        LivePrice(Stock_list, Target_buy_price, Target_sell_price, Current_stock, Current_account)
     
     else:
-        print("개장 시간이 아닙니다.")
+        EndMarket(Current_stock, Current_account)
+        
         exit()

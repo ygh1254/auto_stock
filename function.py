@@ -131,8 +131,7 @@ def OpenPrice(Stock_list, Open_price, Target_buy_price, Current_stock):
         '''
         
         open_price = int(json.loads(response.text)['output']['stck_oprc'])
-        # target_buy_price = RoundNumber(open_price * 0.95)
-        target_buy_price = RoundNumber(int(json.loads(response.text)['output']['stck_prpr']))
+        target_buy_price = RoundNumber(open_price * 0.95)
         
         Open_price[stock] = open_price
         Target_buy_price[stock] = target_buy_price
@@ -156,8 +155,7 @@ def LivePrice(Stock_list, Target_buy_price, Target_sell_price, Current_stock, Cu
         
         live_price = int(json.loads(response.text)['output']['stck_prpr'])
         target_buy_price = Target_buy_price[stock]
-        # target_sell_price = Target_sell_price[stock]
-        target_sell_price = live_price
+        target_sell_price = Target_sell_price[stock]
         
         logger.debug(f"{Current_stock[stock]['prdt_name']} 목표구매가격 {target_buy_price}원, 시가 {live_price}원")
         logger.debug((f"{Current_stock[stock]['prdt_name']} 목표판매가격 {target_sell_price}원, 시가 {live_price}원"))
@@ -172,16 +170,13 @@ def LivePrice(Stock_list, Target_buy_price, Target_sell_price, Current_stock, Cu
                 time.sleep(0.5)
                 BuyStock(stock, target_buy_price)
                 CheckStock(Current_stock, Current_account)
-                # logger.debug(Current_account)
-                # Target_sell_price[stock] = RoundNumber(Current_stock[stock]['pchs_avg_pric'] * 1.03)
-                Target_sell_price[stock] = RoundNumber(live_price)
+                Target_sell_price[stock] = RoundNumber(Current_stock[stock]['pchs_avg_pric'] * 1.03)
         # Current_stock[stock]['ord_psbl_qty']가 0이 아닌 경우 판매 조건식 확인
         else :
             # target_sell_price가 0인 경우 초기화 값이므로 실행하지 않음
             if (target_sell_price != 0) & (live_price >= target_sell_price):
                 SellStock(stock, target_sell_price)
                 CheckStock(Current_stock, Current_account)
-                # logger.debug(Current_account)
     
 # 매수
 def BuyStock(stock, target_buy_price):
@@ -289,7 +284,6 @@ def CheckStock(Current_stock, Current_account):
         
         text = (f"------------------------\n종목번호: {item['pdno']},\n 종목이름: {item['prdt_name']},\n 보유수량:{item['hldg_qty']},\n 주문가능수량:{item['ord_psbl_qty']},\n 매입평균가격:{item['pchs_avg_pric']},\n 현재가:{item['prpr']},\n 평가금액:{item['evlu_amt']},\n 수익:{item['evlu_pfls_amt']},\n 수익률:{item['evlu_pfls_rt']}%")
         logger.debug(text)
-        # SendMessage(text)
         
     for item in current_account:
         Current_account = {'dnca_tot_amt': item['dnca_tot_amt'], # 예수금 총 금액
@@ -305,16 +299,16 @@ def CheckStock(Current_stock, Current_account):
         
         text = (f"------------------------\n예수금총금액:{item['dnca_tot_amt']},\n 금일매수금액:{item['thdt_buy_amt']},\n 금일매도금액:{item['thdt_sll_amt']},\n 총평가금액:{item['tot_evlu_amt']},\n 자산증감액:{item['asst_icdc_amt']},\n 자산증감수익률:{item['asst_icdc_erng_rt']}%")
         logger.debug(text)
-        # SendMessage(text)
         
     time.sleep(0.5)
     
     return Current_stock, Current_account
 
 def EndMarket(current_stock, current_account):
-    SendMessage("장이 종료되었습니다.")
-    
-    for item in current_stock:
+    time.sleep(0.5)
+    SendMessage("장이 종료되었습니다.\n주식잔고와 계좌정보를 출력합니다.")
+    SendMessage("-------------주식잔고-----------")
+    for key, item in current_stock.items():
         Current_stock[item['pdno']] = {'pdno': item['pdno'], # 종목 번호
                                     'prdt_name': item['prdt_name'], # 종목 이름
                                     'hldg_qty': item['hldg_qty'], # 보유 수량
@@ -329,22 +323,11 @@ def EndMarket(current_stock, current_account):
         text = (f"------------------------\n종목번호: {item['pdno']},\n 종목이름: {item['prdt_name']},\n 보유수량:{item['hldg_qty']},\n 주문가능수량:{item['ord_psbl_qty']},\n 매입평균가격:{item['pchs_avg_pric']},\n 현재가:{item['prpr']},\n 평가금액:{item['evlu_amt']},\n 수익:{item['evlu_pfls_amt']},\n 수익률:{item['evlu_pfls_rt']}%")
         logger.debug(text)
         SendMessage(text)
-    
-    for item in current_account:
-        Current_account = {'dnca_tot_amt': item['dnca_tot_amt'], # 예수금 총 금액
-                        'nxdy_excc_amt':item['nxdy_excc_amt'], # 익일 정산 금액
-                        'prvs_rcdl_excc_amt':item['prvs_rcdl_excc_amt'], # 가수도 정산 금액
-                        'thdt_buy_amt':item['thdt_buy_amt'], # 금일 매수 금액
-                        'thdt_sll_amt':item['thdt_sll_amt'], # 금일 매도 금액
-                        'tot_evlu_amt':item['tot_evlu_amt'], # 총 평가 금액
-                        'nass_amt':item['nass_amt'], # 순 자산 금액
-                        'asst_icdc_amt':item['asst_icdc_amt'], # 자산 증감액
-                        'asst_icdc_erng_rt':item['asst_icdc_erng_rt'], # 자산 증감 수익률
-                        }
         
-        text = (f"------------------------\n예수금총금액:{item['dnca_tot_amt']},\n 금일매수금액:{item['thdt_buy_amt']},\n 금일매도금액:{item['thdt_sll_amt']},\n 총평가금액:{item['tot_evlu_amt']},\n 자산증감액:{item['asst_icdc_amt']},\n 자산증감수익률:{item['asst_icdc_erng_rt']}%")
-        logger.debug(text)
-        SendMessage(text)
+    SendMessage("-------------계좌정보-----------")
+    text = (f"------------------------\n예수금총금액:{current_account['dnca_tot_amt']},\n 금일매수금액:{current_account['thdt_buy_amt']},\n 금일매도금액:{current_account['thdt_sll_amt']},\n 총평가금액:{current_account['tot_evlu_amt']},\n 자산증감액:{current_account['asst_icdc_amt']},\n 자산증감수익률:{current_account['asst_icdc_erng_rt']}%")
+    logger.debug(text)
+    SendMessage(text)
 
 # 주식 매수 가능 여부 조회
 def CheckBuyStock(stock, target_buy_price):

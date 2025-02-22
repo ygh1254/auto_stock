@@ -2,11 +2,11 @@ from function import *
 from datetime import datetime
 
 start_time = datetime.strptime("09:00:00", "%H:%M:%S").time()
-end_time = datetime.strptime("15:59:59", "%H:%M:%S").time()
+auction_time = datetime.strptime("15:20:00", "%H:%M:%S").time()
+end_time = datetime.strptime("15:29:59", "%H:%M:%S").time()
 
 Open_price, Target_buy_price = OpenPrice(Stock_list, Open_price, Target_buy_price, Current_stock)
-
-CheckStock(Current_stock, Current_account)
+Current_stock, Current_account = CheckStock(Current_stock, Current_account)
 
 while(True):
     current_time = datetime.now().time()
@@ -15,5 +15,4 @@ while(True):
     
     else:
         EndMarket(Current_stock, Current_account)
-        
         exit()

@@ -21,8 +21,8 @@ Stock_list = STOCK_LIST
 Open_price = {stock: 0 for stock in Stock_list}
 Target_buy_price = {stock: 0 for stock in Stock_list}
 Target_sell_price = {stock: 0 for stock in Stock_list}
-Current_stock = {stock: {'pdno': {stock}, # 종목 번호
-                        'prdt_name': {stock}, # 종목 이름
+Current_stock = {stock: {'pdno': stock, # 종목 번호
+                        'prdt_name': stock, # 종목 이름
                         'hldg_qty': '0', # 보유 수량
                         'ord_psbl_qty': '0', # 주문 가능 수량
                         'pchs_avg_pric': '0', # 매입 평균 가격
@@ -87,8 +87,8 @@ def RoundNumber(number):
 # 시가 받아오기 - 09시 1회 실행
 def OpenPrice(Stock_list, Open_price, Target_buy_price, Current_stock):
     
-    SendMessage("프로그램을 시작합니다.")
-    logging.debug("프로그램을 시작합니다")
+    SendMessage("모의투자 프로그램을 시작합니다.")
+    logging.debug("모의투자 프로그램을 시작합니다")
     
     for stock in Stock_list:
         logging.debug(f'{Current_stock[stock]['prdt_name']}  정보를 가져옵니다')
@@ -271,6 +271,8 @@ def CheckStock(Current_stock, Current_account):
     # [{'dnca_tot_amt': '9949000', 'nxdy_excc_amt': '9672120', 'prvs_rcdl_excc_amt': '9672120', 'cma_evlu_amt': '0', 'bfdy_buy_amt': '276850', 'thdt_buy_amt': '0', 'nxdy_auto_rdpt_amt': '0', 'bfdy_sll_amt': '0', 'thdt_sll_amt': '0', 'd2_auto_rdpt_amt': '0', 'bfdy_tlex_amt': '30', 'thdt_tlex_amt': '0', 'tot_loan_amt': '0', 'scts_evlu_amt': '327500', 'tot_evlu_amt': '9999620', 'nass_amt': '9999620', 'fncg_gld_auto_rdpt_yn': '', 'pchs_amt_smtl_amt': '327850', 'evlu_amt_smtl_amt': '327500', 'evlu_pfls_smtl_amt': '-350', 'tot_stln_slng_chgs': '0', 'bfdy_tot_asst_evlu_amt': '10002970', 'asst_icdc_amt': '-3350', 'asst_icdc_erng_rt': '-0.03349005'}]
     
     for item in current_stock:
+        logger.debug(Current_stock[item['pdno']])
+        logger.debug(Current_stock[item['pdno']]['pdno'])
         Current_stock[item['pdno']] = {'pdno': item['pdno'], # 종목 번호
                                  'prdt_name': item['prdt_name'], # 종목 이름
                                  'hldg_qty': item['hldg_qty'], # 보유 수량
@@ -281,7 +283,9 @@ def CheckStock(Current_stock, Current_account):
                                  'evlu_pfls_amt': item['evlu_pfls_amt'], # 수익
                                  'evlu_pfls_rt': item['evlu_pfls_rt'] # 수익률
                                  }
-        
+        logger.debug(Current_stock[item['pdno']])
+        logger.debug(Current_stock[item['pdno']]['pdno'])
+                
         text = (f"------------------------\n종목번호: {item['pdno']},\n 종목이름: {item['prdt_name']},\n 보유수량:{item['hldg_qty']},\n 주문가능수량:{item['ord_psbl_qty']},\n 매입평균가격:{item['pchs_avg_pric']},\n 현재가:{item['prpr']},\n 평가금액:{item['evlu_amt']},\n 수익:{item['evlu_pfls_amt']},\n 수익률:{item['evlu_pfls_rt']}%")
         logger.debug(text)
         

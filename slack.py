@@ -6,7 +6,7 @@ from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 # from config import *
 from config import OPEN_AI, SLACK_BOT_TOKEN, SLACK_APP_TOKEN, SYSTEM_COMMAND
-# from real_config import *
+from real_config import *
 from openai import OpenAI
 
 OpenAI.api_key = OPEN_AI
@@ -24,12 +24,6 @@ def SendMessage(text):
         assert e.response["error"]
 
 app = App(token=SLACK_BOT_TOKEN)
-
-@app.command("/request")
-def request_command(ack, body):
-    text = body["text"]
-    user_id = body["user_id"]
-    ack(f"Hi, <@{user_id}>!")
 
 @app.event("app_mention")
 def open_ai_event(say, event):

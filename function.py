@@ -69,10 +69,10 @@ def OpenPrice(Stock_list, Open_price, Target_buy_price):
     
     SendMessage("모의투자 프로그램을 시작합니다.")
     logging.debug("모의투자 프로그램을 시작합니다")
-    current_stock = LoadJson('current_stock.json')
+    stock_list = {}
     
     for stock in Stock_list:
-        logging.debug(f'{current_stock[stock]['prdt_name']}  정보를 가져옵니다')
+        logging.debug(f'{stock}  정보를 가져옵니다')
         url = f"https://openapivts.koreainvestment.com:29443/uapi/domestic-stock/v1/quotations/inquire-price?fid_cond_mrkt_div_code=J&fid_input_iscd={stock}"
         payload = ""
         headers = Headers('FHKST01010100')
@@ -119,6 +119,10 @@ def OpenPrice(Stock_list, Open_price, Target_buy_price):
 
         #초당 거래 횟수 제한 (2/sec?)
         time.sleep(0.5)
+        
+        stock_list[stock] = CheckStockInfo(stock)
+        
+    SaveJson(stock_list, 'stock_list.json')
         
     return Open_price, Target_buy_price
 
@@ -279,7 +283,7 @@ def CheckStockInfo(stock):
 
     response = requests.request("GET", url, headers=headers, data=payload)
     
-    print(stock, json.loads(response.text)['output']['prdt_abrv_name'])
+    return json.loads(response.text)['output']
     '''
     print(response.text)
     {
@@ -397,12 +401,17 @@ def SaveJson(data, file_path):
             dict_data[item['pdno']] = item
         with open(file_path, 'w', encoding='utf-8') as json_file:
             json.dump(dict_data, json_file, ensure_ascii=False, indent=4)
-        print(f"주식 데이터가 {file_path}에 저장되었습니다.")
+        print(f"현재 주식 데이터가 {file_path}에 저장되었습니다.")
     
     if file_path == 'current_account.json':
         with open(file_path, 'w', encoding='utf-8') as json_file:
             json.dump(data, json_file, ensure_ascii=False, indent=4)
         print(f"계좌 데이터가 {file_path}에 저장되었습니다.")
+    
+    if file_path == 'stock_list.json':
+        with open(file_path, 'w', encoding='utf-8') as json_file:
+            json.dump(data, json_file, ensure_ascii=False, indent=4)
+        print(f"주식 목록 데이터가 {file_path}에 저장되었습니다.")
         
 def LoadJson(file_path):
     with open(file_path, 'r', encoding='utf-8') as f:

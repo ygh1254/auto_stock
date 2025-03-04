@@ -5,7 +5,7 @@ import math
 import logging
 from datetime import date
 from slack import *
-from real_config import AUTH_TOKEN, APP_KEY, APP_SECRET, STOCK_LIST
+from real_config import *
 
 logging.basicConfig(filename=f'{date.today()}.log', level=logging.DEBUG, 
                     format='%(asctime)s - %(levelname)s - %(message)s',
@@ -73,7 +73,7 @@ def OpenPrice(Stock_list, Open_price, Target_buy_price):
     stock_list = {}
     
     for stock in Stock_list:
-        logging.debug(f'{stock}  정보를 가져옵니다')
+        logging.debug(f'{stock} 정보를 가져옵니다')
         url = f"https://openapi.koreainvestment.com:9443/uapi/domestic-stock/v1/quotations/inquire-price?fid_cond_mrkt_div_code=J&fid_input_iscd={stock}"
         payload = ""
         headers = Headers('FHKST01010100')
@@ -280,7 +280,6 @@ def CheckStockInfo(stock):
 
     response = requests.request("GET", url, headers=headers, data=payload)
     
-    # print(stock, json.loads(response.text)['output']['prdt_abrv_name'])
     return json.loads(response.text)['output']
 
     '''
@@ -392,59 +391,3 @@ def CheckBuyStock(stock, target_buy_price):
     '''
     
     return True
-
-def SaveJson(data, file_path):
-    if file_path == 'current_stock.json':
-        dict_data = {}
-        for item in data:
-            dict_data[item['pdno']] = item
-        with open(file_path, 'w', encoding='utf-8') as json_file:
-            json.dump(dict_data, json_file, ensure_ascii=False, indent=4)
-        print(f"현재 주식 데이터가 {file_path}에 저장되었습니다.")
-    
-    if file_path == 'current_account.json':
-        with open(file_path, 'w', encoding='utf-8') as json_file:
-            json.dump(data, json_file, ensure_ascii=False, indent=4)
-        print(f"계좌 데이터가 {file_path}에 저장되었습니다.")
-    
-    if file_path == 'stock_list.json':
-        with open(file_path, 'w', encoding='utf-8') as json_file:
-            json.dump(data, json_file, ensure_ascii=False, indent=4)
-        print(f"주식 목록 데이터가 {file_path}에 저장되었습니다.")
-
-def LoadJson(file_path):
-    with open(file_path, 'r', encoding='utf-8') as f:
-        account_data = json.load(f)
-    return account_data
-
-def PrintCurrentAccount():
-    current_account = LoadJson('current_account.json')[0]
-    text = (f"------------------------\n"
-            f"예수금 총 금액: {current_account['dnca_tot_amt']},\n"
-            f"금일 매수 금액: {current_account['thdt_buy_amt']},\n"
-            f"금일 매도 금액: {current_account['thdt_sll_amt']},\n"
-            f"총 평가 금액: {current_account['tot_evlu_amt']},\n"
-            f"자산 증감액: {current_account['asst_icdc_amt']},\n"
-            f"자산 증감 수익률: {current_account['asst_icdc_erng_rt']}%")
-    
-    return text
-
-def PrintCurrentStock():
-    current_stock = LoadJson('current_stock.json')
-    
-    if not current_stock:
-        text = (f"보유 주식이 존재하지 않습니다.")
-        
-    else:
-        for pdno, stock in current_stock.items():
-            text = (f"------------------------\n"
-            f"종목 번호: {stock['pdno']},\n"
-            f"종목 이름: {stock['prdt_name']},\n"
-            f"보유 수량: {stock['hldg_qty']},\n"
-            f"주문 가능 수량: {stock['ord_psbl_qty']},\n"
-            f"매입 평균 가격: {stock['pchs_avg_pric']},\n"
-            f"현재가: {stock['prpr']},\n"
-            f"평가 금액: {stock['evlu_amt']},\n"
-            f"수익: {stock['evlu_pfls_amt']},\n"
-            f"수익률: {stock['evlu_pfls_rt']}%")
-    return text

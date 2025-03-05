@@ -5,7 +5,7 @@ import math
 import logging
 from datetime import date
 from slack import *
-from config import AUTH_TOKEN, APP_KEY, APP_SECRET, STOCK_LIST
+from config import *
 
 logging.basicConfig(filename=f'{date.today()}.log', level=logging.DEBUG, 
                     format='%(asctime)s - %(levelname)s - %(message)s',
@@ -127,8 +127,11 @@ def OpenPrice(Stock_list, Open_price, Target_buy_price):
     return Open_price, Target_buy_price
 
 # 현재가 받아오기
-def LivePrice(Stock_list, Target_buy_price, Target_sell_price):
+def LivePrice(Stock_list, Target_buy_price, Target_sell_price, mode):
+    logger.debug(f"{mode} 모드 동작 중")
+    
     current_stock = LoadJson('current_stock.json')
+    stock_list = LoadJson('stock_list.json')
     
     for stock in Stock_list:
         url = f"https://openapivts.koreainvestment.com:29443/uapi/domestic-stock/v1/quotations/inquire-price?fid_cond_mrkt_div_code=J&fid_input_iscd={stock}"
@@ -145,27 +148,32 @@ def LivePrice(Stock_list, Target_buy_price, Target_sell_price):
         target_sell_price = Target_sell_price[stock]
         
         logger.debug("-----------------------------------------------------------")
-        logger.debug(f"{current_stock[stock]['prdt_name']} 목표구매가격 {target_buy_price}원, 시가 {live_price}원")
-        logger.debug((f"{current_stock[stock]['prdt_name']} 목표판매가격 {target_sell_price}원, 시가 {live_price}원"))
+        logger.debug(f"{stock_list[stock]['prdt_name']} 목표구매가격 {target_buy_price}원, 시가 {live_price}원")
+        logger.debug(f"{stock_list[stock]['prdt_name']} 목표판매가격 {target_sell_price}원, 시가 {live_price}원")
         logger.debug("-----------------------------------------------------------")
         
         time.sleep(0.5)
         
-        # Current_stock[stock]['ord_psbl_qty']가 0인 경우 구매 조건식 확인
-        if current_stock[stock]['ord_psbl_qty'] == '0':
+        # current_stock에 stock이 없는 경우 = 보유 주식이 없는 경우
+        if stock not in current_stock:
             # 시가가 목표 매수가 이하
-            
-            if (live_price <= target_buy_price):
+            # if (live_price <= target_buy_price):
+            if (mode == 'normal') & BuyCondition(stock, Open_price, live_price):
                 time.sleep(0.5)
                 BuyStock(stock, target_buy_price)
                 CheckStock()
                 Target_sell_price[stock] = RoundNumber(current_stock[stock]['pchs_avg_pric'] * 1.03)
+            
+            if (mode == 'auction') & AuctionBuyCondition(stock, live_price, target_buy_price):
+                time.sleep(0.5)
+                BuyStock(stock, RoundNumber(live_price * 0.95))
+                CheckStock()
+                Target_sell_price[stock] = RoundNumber(current_stock[stock]['pchs_avg_pric'] * 1.03)
                 
-        # Current_stock[stock]['ord_psbl_qty']가 0이 아닌 경우 판매 조건식 확인
-        else :
+        elif SellCondition(stock, live_price):
             # target_sell_price가 0인 경우 초기화 값이므로 실행하지 않음
-            if (target_sell_price != 0) & (live_price >= target_sell_price):
-                SellStock(stock, target_sell_price)
+            if (target_sell_price != 0):
+                SellStock(stock)
                 CheckStock()
     
 # 매수
@@ -205,12 +213,17 @@ def BuyStock(stock, target_buy_price):
  
         text = f"{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())} | {current_stock[stock]['prdt_name']}을 {target_buy_price}원에 구매합니다"
         SendMessage(text)
-        
-        logger.debug(f"{current_stock[stock]['prdt_name']}을 구매합니다")
+        logger.debug(text)
     
+    else:
+        text = f"{current_stock[stock]['prdt_name']} 구매 실패"
+        SendMessage(text)
+        logger.debug(text)
+        
 # 매도
-def SellStock(stock, target_sell_price):
+def SellStock(stock):
     current_stock = LoadJson('current_stock.json')
+    target_sell_price = RoundNumber(current_stock[stock]['pchs_avg_pric'] * 1.03)
     
     url = "https://openapivts.koreainvestment.com:29443/uapi/domestic-stock/v1/trading/order-cash"
 
@@ -391,61 +404,30 @@ def CheckBuyStock(stock, target_buy_price):
     "msg1": "모의투자 조회가 완료되었습니다.                                                 "
     }
     '''
-    
-    return True
-    
-def SaveJson(data, file_path):
-    if file_path == 'current_stock.json':
-        dict_data = {}
-        for item in data:
-            dict_data[item['pdno']] = item
-        with open(file_path, 'w', encoding='utf-8') as json_file:
-            json.dump(dict_data, json_file, ensure_ascii=False, indent=4)
-        print(f"현재 주식 데이터가 {file_path}에 저장되었습니다.")
-    
-    if file_path == 'current_account.json':
-        with open(file_path, 'w', encoding='utf-8') as json_file:
-            json.dump(data, json_file, ensure_ascii=False, indent=4)
-        print(f"계좌 데이터가 {file_path}에 저장되었습니다.")
-    
-    if file_path == 'stock_list.json':
-        with open(file_path, 'w', encoding='utf-8') as json_file:
-            json.dump(data, json_file, ensure_ascii=False, indent=4)
-        print(f"주식 목록 데이터가 {file_path}에 저장되었습니다.")
-        
-def LoadJson(file_path):
-    with open(file_path, 'r', encoding='utf-8') as f:
-        account_data = json.load(f)
-    return account_data
+    if int(json.loads(response.text)['output']['max_buy_qty']) != 0:
+        return True
 
-def PrintCurrentAccount():
-    current_account = LoadJson('current_account.json')[0]
-    text = (f"------------------------\n"
-            f"예수금 총 금액: {current_account['dnca_tot_amt']},\n"
-            f"금일 매수 금액: {current_account['thdt_buy_amt']},\n"
-            f"금일 매도 금액: {current_account['thdt_sll_amt']},\n"
-            f"총 평가 금액: {current_account['tot_evlu_amt']},\n"
-            f"자산 증감액: {current_account['asst_icdc_amt']},\n"
-            f"자산 증감 수익률: {current_account['asst_icdc_erng_rt']}%")
-    
-    return text
-
-def PrintCurrentStock():
-    current_stock = LoadJson('current_stock.json')
-    
-    if not current_stock:
-        text = (f"보유 주식이 존재하지 않습니다.")
-        
     else:
-        for pdno, stock in current_stock.items():
-            text = (f"------------------------\n"
-            f"종목 번호: {stock['pdno']},\n"
-            f"종목 이름: {stock['prdt_name']},\n"
-            f"보유 수량: {stock['hldg_qty']},\n"
-            f"주문 가능 수량: {stock['ord_psbl_qty']},\n"
-            f"매입 평균 가격: {stock['pchs_avg_pric']},\n"
-            f"현재가: {stock['prpr']},\n"
-            f"평가 금액: {stock['evlu_amt']},\n"
-            f"수익: {stock['evlu_pfls_amt']},\n"
-            f"수익률: {stock['evlu_pfls_rt']}%")
-    return text
+        text = f"구매 불가능"
+        SendMessage(text)
+        logger.debug(text)
+        
+        return False
+
+def BuyCondition(stock, Open_price, live_price):
+    if (RoundNumber(Open_price[stock] * 0.95)) >= live_price:
+        return True
+    
+    else :
+        return False
+    
+def AuctionBuyCondition(stock, Live_price, Target_buy_price):
+    return True
+
+def SellCondition(stock, live_price):
+    current_stock = LoadJson('current_stock.json')
+    if RoundNumber(current_stock[stock]['pchs_avg_pric'] * 1.03) >= live_price:
+        return True
+    
+    else:
+        return False

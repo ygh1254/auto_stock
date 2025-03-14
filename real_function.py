@@ -48,7 +48,7 @@ def CatchError(response):
 
 # 호가 간격에 맞게 반올림
 def RoundNumber(number):
-    number = int(number)
+    number = float(number)
     if number < 2000:
         return math.floor(number)
     elif number < 5000:
@@ -128,7 +128,9 @@ def OpenPrice(Stock_list, Open_price, Target_buy_price):
     return Open_price, Target_buy_price
 
 # 현재가 받아오기
-def LivePrice(Stock_list, Target_buy_price, Target_sell_price):
+def LivePrice(Stock_list, Target_buy_price, mode):
+    logger.debug(f"{mode} 모드 동작 중")
+    
     current_stock = LoadJson('current_stock.json')
     stock_list = LoadJson('stock_list.json')
     for stock in Stock_list:
@@ -143,30 +145,36 @@ def LivePrice(Stock_list, Target_buy_price, Target_sell_price):
         
         live_price = int(json.loads(response.text)['output']['stck_prpr'])
         target_buy_price = Target_buy_price[stock]
-        target_sell_price = Target_sell_price[stock]
         
         logger.debug("-----------------------------------------------------------")
         logger.debug(f"{stock_list[stock]['prdt_name']} 목표구매가격 {target_buy_price}원, 시가 {live_price}원")
-        logger.debug(f"{stock_list[stock]['prdt_name']} 목표판매가격 {target_sell_price}원, 시가 {live_price}원")
         logger.debug("-----------------------------------------------------------")
         
         time.sleep(0.5)
         
         # current_stock에 stock이 없는 경우 = 보유 주식이 없는 경우
         if stock not in current_stock:
-            # 시가가 목표 매수가 이하
-            if (live_price <= target_buy_price):
+            logger.debug(f'{stock} is not in currnet stock')
+            if (mode == 'normal') & BuyCondition(live_price, target_buy_price):
                 time.sleep(0.5)
                 BuyStock(stock, target_buy_price)
                 CheckStock()
-                Target_sell_price[stock] = RoundNumber(current_stock[stock]['pchs_avg_pric'] * 1.03)
-                
-        else :
-            # target_sell_price가 0인 경우 초기화 값이므로 실행하지 않음
-            if (target_sell_price != 0) & (live_price >= target_sell_price):
-                SellStock(stock, target_sell_price)
+                current_stock = LoadJson('current_stock.json')
+            
+            # 동시호가 진행 시 매수 주문
+            if (mode == 'auction'):
+                time.sleep(0.5)
+                BuyStock(stock, RoundNumber(live_price * 0.95))
                 CheckStock()
-                
+                current_stock = LoadJson('current_stock.json')
+        
+        # current_stock에 stock이 없는 경우 and 주문 가능 수량이 존재하는 경우
+        elif current_stock[stock]['ord_psbl_qty'] != '0':
+            avarage_price = float(current_stock[stock]['pchs_avg_pric'])
+            # 매수 가격 기준 3% 수익률
+            SellStock(stock, RoundNumber(avarage_price * 1.03))
+            CheckStock()
+            current_stock = LoadJson('current_stock.json')
 # 매수
 def BuyStock(stock, target_buy_price):
     
@@ -183,7 +191,7 @@ def BuyStock(stock, target_buy_price):
         "ORD_UNPR": str(target_buy_price) # 매수 가격
         })
         
-        headers = Headers('TTTC0802U')
+        headers = Headers('TTTC0012U')
         
         response = requests.request("POST", url, headers=headers, data=payload)
         CatchError(response)
@@ -205,6 +213,8 @@ def BuyStock(stock, target_buy_price):
         SendMessage(text)
         
         logger.debug(f"{stock}을 구매합니다")
+        logger.debug(f'--------------BuyStock--------------')
+        logger.debug(response.text)
     
 # 매도
 def SellStock(stock, target_sell_price):
@@ -220,7 +230,7 @@ def SellStock(stock, target_sell_price):
     "ORD_UNPR": str(target_sell_price) # 매수 가격
     })
     
-    headers = Headers('TTTC0801U')
+    headers = Headers('TTTC0011U')
 
     response = requests.request("POST", url, headers=headers, data=payload)
     CatchError(response)
@@ -367,7 +377,8 @@ def CheckBuyStock(stock, target_buy_price):
     headers = Headers('TTTC8908R')
     response = requests.request("GET", url, headers=headers, data=payload)
     CatchError(response)
-    
+    logger.debug(f'--------------CheckBuyStock--------------')
+    logger.debug(response.text)
     '''
     {
     "output": {
@@ -391,3 +402,10 @@ def CheckBuyStock(stock, target_buy_price):
     '''
     
     return True
+
+def BuyCondition(Live_price, target_buy_price):
+    if (target_buy_price >= Live_price):
+        return True
+    
+    else :
+        return False

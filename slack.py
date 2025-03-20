@@ -4,7 +4,6 @@ from slack_sdk.errors import SlackApiError
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 # from config import *
-from config import OPEN_AI, SLACK_BOT_TOKEN, SLACK_APP_TOKEN, SYSTEM_COMMAND
 from real_config import *
 from openai import OpenAI
 

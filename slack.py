@@ -148,8 +148,6 @@ def open_ai_event(say, event):
         tools=tools
     )
     
-    print(completion.choices[0])
-    
     if completion.choices[0].message.content is None:
         function_name = completion.choices[0].message.tool_calls[0].function.name
         arguments = json.loads(completion.choices[0].message.tool_calls[0].function.arguments)
